@@ -50,26 +50,22 @@ contextBridge.exposeInMainWorld("electronAPI", {
   loadApiKey: () => ipcRenderer.invoke('load-api-key'),
 
   // === OPENAI COMPLETION FUNCTION ===
-  getOpenAICompletion: (prompt) => ipcRenderer.invoke('get-openai-completion', prompt), // Added comma
+  getOpenAICompletion: (prompt) => ipcRenderer.invoke('get-openai-completion', prompt),
 
   // === AI HELPER EVENT LISTENERS ===
-  /**
-   * Listen for captured text from the main process.
-   * @param {function(text: string)} callback - Function to execute when text is captured.
-   */
   onCapturedTextForAI: (callback) => ipcRenderer.on('captured-text-for-ai', (event, text) => callback(text)),
-
-  /**
-   * Listen for notification that no text was captured.
-   * @param {function} callback - Function to execute.
-   */
   onNoTextCapturedForAI: (callback) => ipcRenderer.on('no-text-captured-for-ai', (event) => callback()),
+  onGlobalShortcutTriggered: (callback) => ipcRenderer.on('global-shortcut-triggered', (event, data) => callback(data)),
 
+  // === TYPE TEXT AT CURSOR FUNCTION ===
+  typeText: (text) => ipcRenderer.invoke('type-text-at-cursor', text), // Added comma
+
+  // === TRIGGER TYPE ANSWER LISTENER ===
   /**
-   * Listen for global shortcut triggered event (optional, for UI feedback if needed).
-   * @param {function(data: {shortcut: string})} callback - Function to execute.
+   * Listens for a signal from the main process to trigger typing the current AI answer.
+   * @param {function} callback - Function to execute when the signal is received.
    */
-  onGlobalShortcutTriggered: (callback) => ipcRenderer.on('global-shortcut-triggered', (event, data) => callback(data))
+  onTriggerTypeAnswerHotkey: (callback) => ipcRenderer.on('trigger-type-answer-hotkey', () => callback())
 });
 
 /**

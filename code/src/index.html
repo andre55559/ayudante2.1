@@ -449,16 +449,28 @@
         <div class="ai-helper-container">
           <div class="ai-section">
             <h3>Captured Question:</h3>
-            <div id="aiCapturedQuestion" class="ai-display-box loading-placeholder" style="min-height: 50px;">
-              <p>Press CommandOrControl+Shift+Q on highlighted text to capture.</p>
+            <div id="aiCapturedQuestion" class="ai-display-box loading-placeholder" style="min-height: 100px;"> <!-- Increased min-height -->
+              <h4>How to use AI Helper:</h4>
+              <ol style="text-align: left; margin-left: 20px;">
+                <li><strong>Capture Question:</strong> Highlight text and press <code>Cmd/Ctrl+Shift+Q</code>.</li>
+                <li><strong>Review Answer:</strong> The AI's answer will appear below.</li>
+                <li><strong>Prepare to Type:</strong> Click into the text field in the other application where the answer should go.</li>
+                <li><strong>Type Answer:</strong>
+                  <ul style="margin-left: 20px;">
+                    <li><strong>Button:</strong> Return here and click "Type Answer".</li>
+                    <li><strong>Hotkey:</strong> Or, just press <code>Cmd/Ctrl+Shift+T</code>.</li>
+                  </ul>
+                </li>
+              </ol>
             </div>
           </div>
           <div class="ai-section">
             <h3>AI's Answer:</h3>
             <div id="aiAnswerDisplay" class="ai-display-box loading-placeholder" style="min-height: 100px;">
-              <p>Answer will appear here...</p>
+              <p>AI's answer will appear here after capturing a question.</p>
             </div>
             <button id="copyAiAnswerBtn" class="btn btn-secondary" style="margin-top: 10px; display: none;">Copy Answer</button>
+            <button id="typeAiAnswerBtn" class="btn btn-primary" style="margin-top: 10px; margin-left: 5px; display: none;">Type Answer</button>
           </div>
           <div id="aiHelperStatus" class="message" style="display: none; margin-top: 15px;"></div>
           <div id="aiLoadingIndicator" style="display: none; margin-top: 10px;">

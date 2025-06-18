@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, clipboard } = require("electron"); // clipboard added
+const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, clipboard } = require("electron");
 const fs = require("fs").promises;
 const fsSync = require("fs");
 const path = require("path");
 const Store = require('electron-store');
 const { OpenAI } = require("openai");
-const robot = require("robotjs"); // robotjs added
+const robot = require("robotjs");
 
 // Configuración de rutas
 const CONFIG_DIR = path.join(app.getPath("userData"), "config");
@@ -25,9 +25,6 @@ const DEFAULT_CONFIG = {
 let mainWindow = null;
 let store;
 
-/**
- * Inicializar directorios de la aplicación
- */
 async function initializeAppDirectories() {
   try {
     await fs.mkdir(CONFIG_DIR, { recursive: true });
@@ -40,9 +37,6 @@ async function initializeAppDirectories() {
   }
 }
 
-/**
- * Cargar configuración de la aplicación
- */
 async function loadAppConfig() {
   try {
     const configData = await fs.readFile(CONFIG_FILE, "utf-8");
@@ -53,9 +47,6 @@ async function loadAppConfig() {
   }
 }
 
-/**
- * Crear ventana principal con configuración optimizada
- */
 async function createWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const windowWidth = Math.min(1200, Math.floor(screenWidth * 0.8));
@@ -96,9 +87,6 @@ async function createWindow() {
   }
 }
 
-/**
- * Verificar licencia existente al iniciar
- */
 async function checkExistingLicense() {
   try {
     if (fsSync.existsSync(LICENSE_FILE)) {
@@ -126,9 +114,6 @@ async function checkExistingLicense() {
   }
 }
 
-/**
- * Inicialización de la aplicación
- */
 app.whenReady().then(async () => {
   store = new Store();
   await initializeAppDirectories();
@@ -140,30 +125,18 @@ app.whenReady().then(async () => {
     }
   });
 
-  // Register a global shortcut
-  const ret = globalShortcut.register('CommandOrControl+Shift+Q', async () => { // Make callback async
+  // Register global shortcut for capturing text
+  const captureShortcutRet = globalShortcut.register('CommandOrControl+Shift+Q', async () => {
     console.log('Global shortcut CommandOrControl+Shift+Q pressed. Attempting to capture highlighted text.');
-
     let selectedText = '';
-
-    // Method 2: Programmatic copy using robotjs (more intrusive but often more reliable)
-    const originalClipboardText = clipboard.readText(); // Save current clipboard
-    const originalClipboardHTML = clipboard.readHTML(); // Save current HTML clipboard (if any)
-    clipboard.clear(); // Clear clipboard before copy to ensure we get the selection
-
+    const originalClipboardText = clipboard.readText();
+    const originalClipboardHTML = clipboard.readHTML();
+    clipboard.clear();
     try {
-      // Determine OS for correct modifier key
       const modifier = process.platform === 'darwin' ? 'command' : 'control';
-
-      // Simulate 'copy' command
       robot.keyTap('c', modifier);
-
-      // Give the OS a moment to process the copy action
-      await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-
-      selectedText = clipboard.readText(); // Read the copied text
-
-      // Restore original clipboard content
+      await new Promise(resolve => setTimeout(resolve, 200));
+      selectedText = clipboard.readText();
       if (originalClipboardHTML && originalClipboardHTML.length > 0) {
           clipboard.write({ text: originalClipboardText, html: originalClipboardHTML });
       } else if (originalClipboardText && originalClipboardText.length > 0) {
@@ -171,7 +144,6 @@ app.whenReady().then(async () => {
       } else {
           clipboard.clear();
       }
-
     } catch (error) {
       console.error('Error during robotjs copy or clipboard operations:', error);
       if (originalClipboardHTML && originalClipboardHTML.length > 0) {
@@ -196,20 +168,32 @@ app.whenReady().then(async () => {
     }
   });
 
-  if (!ret) {
+  if (!captureShortcutRet) {
     console.error('Failed to register global shortcut CommandOrControl+Shift+Q');
   }
+
+  // Register global shortcut for typing the answer
+  const typeShortcutRet = globalShortcut.register('CommandOrControl+Shift+T', () => {
+    console.log('Global shortcut CommandOrControl+Shift+T pressed (for typing answer)');
+    if (mainWindow && mainWindow.webContents) {
+      // Send a message to the renderer to trigger the typing action
+      mainWindow.webContents.send('trigger-type-answer-hotkey');
+    }
+  });
+
+  if (!typeShortcutRet) {
+    console.error('Failed to register global shortcut CommandOrControl+Shift+T');
+  }
   // console.log('Is CommandOrControl+Shift+Q registered?', globalShortcut.isRegistered('CommandOrControl+Shift+Q'));
+  // console.log('Is CommandOrControl+Shift+T registered?', globalShortcut.isRegistered('CommandOrControl+Shift+T'));
 });
 
-// Cerrar aplicación cuando todas las ventanas se cierran (excepto en macOS)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// Unregister shortcuts when the app quits
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   console.log('Global shortcuts unregistered.');
@@ -288,46 +272,34 @@ setInterval(async () => {
 // === API KEY HANDLERS ===
 ipcMain.handle('save-api-key', async (event, apiKey) => {
   try {
-    if (typeof apiKey !== 'string') {
-      return { success: false, error: 'Invalid API Key format' };
-    }
+    if (typeof apiKey !== 'string') { return { success: false, error: 'Invalid API Key format' }; }
     store.set('openai_api_key', apiKey);
     return { success: true };
-  } catch (error) {
-    console.error("Error saving API key:", error);
-    return { success: false, error: error.message };
-  }
+  } catch (error) { console.error("Error saving API key:", error); return { success: false, error: error.message }; }
 });
 
 ipcMain.handle('load-api-key', async () => {
   try {
     const apiKey = store.get('openai_api_key');
     return { success: true, apiKey: apiKey || '' };
-  } catch (error) {
-    console.error("Error loading API key:", error);
-    return { success: false, error: error.message, apiKey: '' };
-  }
+  } catch (error) { console.error("Error loading API key:", error); return { success: false, error: error.message, apiKey: '' }; }
 });
 
 // === OPENAI COMPLETION HANDLER ===
 ipcMain.handle('get-openai-completion', async (event, userPrompt) => {
   console.log(`OpenAI completion request received for prompt: "${userPrompt.substring(0, 50)}..."`);
   const retrievedApiKey = store.get('openai_api_key');
-
   if (!retrievedApiKey) {
     console.warn('OpenAI API key not found in store.');
     return { success: false, error: 'OpenAI API key not set. Please set it in settings.' };
   }
-
   const openai = new OpenAI({ apiKey: retrievedApiKey });
-
   try {
     console.log('Sending request to OpenAI API...');
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: userPrompt }],
     });
-
     const assistantResponse = completion.choices[0]?.message?.content?.trim();
     if (assistantResponse) {
       console.log('OpenAI response received successfully.');
@@ -342,6 +314,22 @@ ipcMain.handle('get-openai-completion', async (event, userPrompt) => {
         return { success: false, error: 'OpenAI API key is invalid or has insufficient credits.' };
     }
     return { success: false, error: `OpenAI API error: ${error.message}` };
+  }
+});
+
+// === TYPE TEXT AT CURSOR HANDLER ===
+ipcMain.handle('type-text-at-cursor', async (event, textToType) => {
+  if (typeof textToType !== 'string') {
+    console.error('Invalid textToType received:', textToType);
+    return { success: false, error: 'Invalid text format received.' };
+  }
+  try {
+    console.log(`Attempting to type text: "${textToType.substring(0, 30)}..."`);
+    robot.typeString(textToType);
+    return { success: true };
+  } catch (error) {
+    console.error('Error during robot.typeString:', error);
+    return { success: false, error: `Failed to type text: ${error.message}` };
   }
 });
 
