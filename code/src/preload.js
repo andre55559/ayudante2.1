@@ -49,23 +49,32 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveApiKey: (apiKey) => ipcRenderer.invoke('save-api-key', apiKey),
   loadApiKey: () => ipcRenderer.invoke('load-api-key'),
 
+  // === WEB INTERACTION SETTINGS ===
+  saveWebInteractionSetting: (isEnabled) => ipcRenderer.invoke('save-web-interaction-setting', isEnabled),
+  loadWebInteractionSetting: () => ipcRenderer.invoke('load-web-interaction-setting'),
+
   // === OPENAI COMPLETION FUNCTION ===
   getOpenAICompletion: (prompt) => ipcRenderer.invoke('get-openai-completion', prompt),
 
   // === AI HELPER EVENT LISTENERS ===
-  onCapturedTextForAI: (callback) => ipcRenderer.on('captured-text-for-ai', (event, text) => callback(text)),
+  onCapturedTextForAI: (callback) => ipcRenderer.on('captured-text-for-ai', (event, data) => callback(data)), // Modified to pass 'data'
   onNoTextCapturedForAI: (callback) => ipcRenderer.on('no-text-captured-for-ai', (event) => callback()),
   onGlobalShortcutTriggered: (callback) => ipcRenderer.on('global-shortcut-triggered', (event, data) => callback(data)),
 
   // === TYPE TEXT AT CURSOR FUNCTION ===
-  typeText: (text) => ipcRenderer.invoke('type-text-at-cursor', text), // Added comma
+  typeText: (text) => ipcRenderer.invoke('type-text-at-cursor', text),
 
   // === TRIGGER TYPE ANSWER LISTENER ===
+  onTriggerTypeAnswerHotkey: (callback) => ipcRenderer.on('trigger-type-answer-hotkey', () => callback()), // Added comma
+
+  // === TYPE INTO WEB CONTENT FIELD FUNCTION ===
   /**
-   * Listens for a signal from the main process to trigger typing the current AI answer.
-   * @param {function} callback - Function to execute when the signal is received.
+   * Attempts to type text into a specified input field within a web page.
+   * @param {string} selector - The CSS selector of the target input field.
+   * @param {string} text - The text to type.
+   * @returns {Promise<{success: boolean, error?: string, message?: string}>}
    */
-  onTriggerTypeAnswerHotkey: (callback) => ipcRenderer.on('trigger-type-answer-hotkey', () => callback())
+  typeIntoWebContentField: (selector, text) => ipcRenderer.invoke('type-into-web-content-field', { selector, text })
 });
 
 /**

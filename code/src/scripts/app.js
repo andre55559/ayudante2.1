@@ -25,20 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('🎓 Iniciando AsistenteEscolarAI...');
   
   try {
-    // Verificar APIs disponibles
-    if (!window.electronAPI) {
-      throw new Error('APIs de Electron no disponibles');
-    }
-    
-    // Configurar listeners de eventos
+    if (!window.electronAPI) throw new Error('APIs de Electron no disponibles');
     setupEventListeners();
-    
-    // Configurar tema inicial
     initializeTheme();
-    
-    // Esperar estado de licencia
     await waitForLicenseCheck();
-    
     console.log('✅ Aplicación inicializada correctamente');
   } catch (error) {
     console.error('❌ Error al inicializar la aplicación:', error);
@@ -51,20 +41,17 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function waitForLicenseCheck() {
   return new Promise((resolve) => {
-    // Listener para el estado de licencia
     window.electronAPI.onLicenseStatus((data) => {
       console.log('📋 Estado de licencia recibido:', data);
-      
       if (data.valid) {
         AppState.isLicenseValid = true;
         showMainApp();
         loadUserData();
-        resolve();
       } else {
         AppState.isLicenseValid = false;
         showLicenseScreen();
-        resolve();
       }
+      resolve();
     });
   });
 }
@@ -73,7 +60,6 @@ async function validateLicense() {
   const input = document.getElementById('licenseInput');
   const messageDiv = document.getElementById('licenseMessage');
   const validateBtn = document.getElementById('validateBtn');
-  
   const code = input.value.trim();
   
   if (!code) {
@@ -88,15 +74,11 @@ async function validateLicense() {
   
   try {
     const result = await window.electronAPI.validateLicense(code);
-    
     if (result.success) {
       AppState.isLicenseValid = true;
       showLicenseMessage('✅ ' + result.message, 'success');
       if (AppState.sounds) window.notificationAPI?.playNotificationSound('success');
-      setTimeout(() => {
-        showMainApp();
-        loadUserData();
-      }, 1500);
+      setTimeout(() => { showMainApp(); loadUserData(); }, 1500);
     } else {
       showLicenseMessage('❌ ' + result.error, 'error');
       if (AppState.sounds) window.notificationAPI?.playNotificationSound('error');
@@ -124,7 +106,7 @@ function showLicenseMessage(message, type) {
 function showLicenseScreen() {
   document.getElementById('licenseScreen').style.display = 'flex';
   document.getElementById('mainApp').style.display = 'none';
-  setTimeout(() => document.getElementById('licenseInput').focus(), 100);
+  setTimeout(() => document.getElementById('licenseInput')?.focus(), 100);
 }
 
 function showMainApp() {
@@ -141,7 +123,7 @@ async function initializeMainApp() {
     AppState.config = await window.electronAPI.getAppConfig();
     applyUserConfig();
     initializeNavigation();
-    initializeTools(); // Ensure tools are initialized (calculator etc might need this)
+    initializeTools();
     showWelcomeMessage();
     await logActivity('🎯 Aplicación iniciada');
     console.log('🏠 App principal inicializada');
@@ -175,31 +157,23 @@ function applyUserConfig() {
  */
 function initializeNavigation() {
   const navButtons = document.querySelectorAll('.nav-btn');
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  });
-  switchTab('dashboard'); // Default tab
+  navButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  switchTab('dashboard');
 }
 
 function switchTab(tabName) {
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
-  
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
   document.getElementById(tabName)?.classList.add('active');
-  
   AppState.activeTab = tabName;
   
   switch (tabName) {
     case 'dashboard': updateDashboardStats(); break;
-    case 'tools': initializeTools(); break; // Re-initialize or update tools if needed
+    case 'tools': initializeTools(); break;
     case 'progress': updateProgressDisplay(); break;
     case 'settings': loadSettingsData(); break;
-    case 'aiHelperTab':
-      // if (typeof window.initializeAiHelper === 'function') {
-      //   window.initializeAiHelper();
-      // }
-      break;
+    case 'aiHelperTab': break;
   }
   console.log(`📋 Cambiado a tab: ${tabName}`);
 }
@@ -231,9 +205,10 @@ function calculateCurrentStreak() {
 }
 
 function updateDailyGoalProgress(currentTime) {
-  const dailyGoal = parseInt(document.getElementById('dailyGoalInput').value || '60');
+  const dailyGoal = parseInt(document.getElementById('dailyGoalInput')?.value || '60');
   const progressPercent = Math.min((currentTime / dailyGoal) * 100, 100);
   const timeElement = document.getElementById('todayStudyTime');
+  if (!timeElement) return;
   if (progressPercent >= 100) timeElement.style.color = 'var(--success)';
   else if (progressPercent >= 50) timeElement.style.color = 'var(--warning)';
   else timeElement.style.color = 'var(--primary)';
@@ -245,7 +220,7 @@ function updateDailyGoalProgress(currentTime) {
 function setupEventListeners() {
   const licenseInput = document.getElementById('licenseInput');
   if (licenseInput) licenseInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') validateLicense(); });
-  
+
   const themeToggle = document.getElementById('themeToggle');
   if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
 
@@ -255,6 +230,7 @@ function setupEventListeners() {
       const apiKeyInput = document.getElementById('apiKeyInput');
       const apiKey = apiKeyInput.value.trim();
       const apiKeyMessage = document.getElementById('apiKeyMessage');
+      if (!apiKeyInput || !apiKeyMessage) return;
       if (!apiKey) {
         apiKeyMessage.textContent = 'La clave API no puede estar vacía.';
         apiKeyMessage.className = 'message error';
@@ -276,6 +252,41 @@ function setupEventListeners() {
         apiKeyMessage.className = 'message error';
       }
       apiKeyMessage.style.display = 'block';
+      setTimeout(() => { apiKeyMessage.style.display = 'none'; }, 3000);
+    });
+  }
+
+  const webInteractionCheckbox = document.getElementById('enableWebInteractionCheckbox');
+  if (webInteractionCheckbox) {
+    webInteractionCheckbox.addEventListener('change', async (event) => {
+      const isEnabled = event.target.checked;
+      const messageEl = document.getElementById('webInteractionSettingMessage');
+      try {
+        const result = await window.electronAPI.saveWebInteractionSetting(isEnabled);
+        if (result.success) {
+          if (messageEl) {
+            messageEl.textContent = `Smart Web Field Detection ${isEnabled ? 'enabled' : 'disabled'}.`;
+            messageEl.className = 'message success';
+            messageEl.style.display = 'block';
+          }
+        } else {
+          if (messageEl) {
+            messageEl.textContent = `Error saving setting: ${result.error}`;
+            messageEl.className = 'message error';
+            messageEl.style.display = 'block';
+          }
+          event.target.checked = !isEnabled;
+        }
+      } catch (error) {
+        console.error('Error invoking saveWebInteractionSetting:', error);
+        if (messageEl) {
+          messageEl.textContent = 'An unexpected error occurred while saving.';
+          messageEl.className = 'message error';
+          messageEl.style.display = 'block';
+        }
+        event.target.checked = !isEnabled;
+      }
+      if (messageEl) setTimeout(() => { messageEl.style.display = 'none'; }, 3000);
     });
   }
   
@@ -284,9 +295,9 @@ function setupEventListeners() {
 }
 
 function handleKeyboardShortcuts(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '5') { // Updated to 5 tabs
+  if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '5') {
     e.preventDefault();
-    const tabs = ['dashboard', 'tools', 'progress', 'settings', 'aiHelperTab']; // Added aiHelperTab
+    const tabs = ['dashboard', 'tools', 'progress', 'settings', 'aiHelperTab'];
     const tabIndex = parseInt(e.key) - 1;
     if (tabs[tabIndex]) switchTab(tabs[tabIndex]);
   }
@@ -331,7 +342,9 @@ async function saveAppConfig(updates) {
 }
 
 async function updateDailyGoal() {
-  const newGoal = parseInt(document.getElementById('dailyGoalInput').value);
+  const dailyGoalInput = document.getElementById('dailyGoalInput');
+  if (!dailyGoalInput) return;
+  const newGoal = parseInt(dailyGoalInput.value);
   if (newGoal >= 15 && newGoal <= 480) {
     document.getElementById('dailyGoal').textContent = newGoal + ' min';
     await saveAppConfig({ dailyGoal: newGoal });
@@ -365,7 +378,7 @@ function updateProgressDisplay() {
   Object.keys(subjects).forEach(subject => {
     const subjectData = subjects[subject];
     const progressBar = document.querySelector(`[data-subject="${subject}"]`);
-    const timeSpan = progressBar?.parentElement.parentElement.querySelector('.subject-time');
+    const timeSpan = progressBar?.parentElement?.parentElement?.querySelector('.subject-time');
     if (progressBar && timeSpan) {
       const hours = Math.floor((subjectData.time || 0) / 60);
       const percentage = Math.min((subjectData.time || 0) / 3600 * 100, 100);
@@ -377,8 +390,8 @@ function updateProgressDisplay() {
 
 async function updateUserProgress(updates) {
   try {
-    AppState.progress = { ...(AppState.progress || {}), ...updates }; // Ensure AppState.progress is not null
-    await window.electronAPI.updateUserProgress(AppState.progress); // Send the whole updated object
+    AppState.progress = { ...(AppState.progress || {}), ...updates };
+    await window.electronAPI.updateUserProgress(AppState.progress);
     updateProgressDisplay();
     updateDashboardStats();
   } catch (error) {
@@ -488,6 +501,7 @@ function showWelcomeMessage() {
  * ⚙️ Configuración de Settings
  */
 function loadSettingsData() {
+  // Load API Key
   window.electronAPI.loadApiKey().then(result => {
     const apiKeyInput = document.getElementById('apiKeyInput');
     const apiKeyMessage = document.getElementById('apiKeyMessage');
@@ -498,6 +512,7 @@ function loadSettingsData() {
         apiKeyMessage.textContent = 'Error al cargar la clave API: ' + result.error;
         apiKeyMessage.className = 'message error';
         apiKeyMessage.style.display = 'block';
+        setTimeout(() => { apiKeyMessage.style.display = 'none'; }, 3000);
       }
     }
   }).catch(err => {
@@ -507,7 +522,25 @@ function loadSettingsData() {
       apiKeyMessage.textContent = 'Error crítico al invocar loadApiKey.';
       apiKeyMessage.className = 'message error';
       apiKeyMessage.style.display = 'block';
+      setTimeout(() => { apiKeyMessage.style.display = 'none'; }, 3000);
     }
+  });
+
+  // Load Web Interaction Setting
+  window.electronAPI.loadWebInteractionSetting().then(result => {
+    const checkbox = document.getElementById('enableWebInteractionCheckbox');
+    if (checkbox) {
+      if (result.success) {
+        checkbox.checked = result.isEnabled;
+      } else {
+        console.error('Failed to load web interaction setting:', result.error);
+        checkbox.checked = false; // Default to false on error
+      }
+    }
+  }).catch(err => {
+      console.error('Error invoking loadWebInteractionSetting:', err);
+      const checkbox = document.getElementById('enableWebInteractionCheckbox');
+      if (checkbox) checkbox.checked = false;
   });
 
   const licenseStatus = document.getElementById('licenseStatus');
@@ -519,15 +552,11 @@ function loadSettingsData() {
 }
 
 /**
- * 🛠️ Funciones de Herramientas (Placeholder - definir en sus propios archivos o aquí si son simples)
+ * 🛠️ Funciones de Herramientas
  */
 function initializeTools() {
-  // Initialize calculator, pomodoro, etc. if they need specific setup when tab is shown or app starts
-  // For now, their event listeners are in index.html or respective JS files.
-  // If calculator.js, timer.js, units.js, utils.js manage their own state and init, this might be minimal.
   console.log("🛠️ Herramientas inicializadas/actualizadas");
 }
-
 
 /**
  * 🔧 Utilidades Globales (expuestas a HTML via window)
@@ -541,10 +570,6 @@ window.toggleSound = toggleSound;
 window.toggleReminders = toggleReminders;
 window.createBackup = createBackup;
 window.resetProgress = resetProgress;
-
-// Functions for tools - these might be better in their own JS files if complex
-// For now, keeping it simple, assuming they are called from HTML onclick
-// Calculator functions are in calculator.js, etc.
 
 // Debug en desarrollo
 if (process?.env?.NODE_ENV === 'development') {

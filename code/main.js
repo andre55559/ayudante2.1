@@ -1,6 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, clipboard } = require("electron");
 const fs = require("fs").promises;
-const fsSync = require("fs");
 const path = require("path");
 const Store = require('electron-store');
 const { OpenAI } = require("openai");
@@ -24,12 +23,15 @@ const DEFAULT_CONFIG = {
 
 let mainWindow = null;
 let store;
+let fieldDetectorScriptContent = '';
 
 async function initializeAppDirectories() {
   try {
     await fs.mkdir(CONFIG_DIR, { recursive: true });
     await fs.mkdir(DATA_DIR, { recursive: true });
-    if (!fsSync.existsSync(CONFIG_FILE)) {
+    try {
+      await fs.access(CONFIG_FILE);
+    } catch (error) {
       await fs.writeFile(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2));
     }
   } catch (error) {
@@ -89,22 +91,26 @@ async function createWindow() {
 
 async function checkExistingLicense() {
   try {
-    if (fsSync.existsSync(LICENSE_FILE)) {
-      const licenseData = await fs.readFile(LICENSE_FILE, "utf-8");
-      const { code, date } = JSON.parse(licenseData);
-      const config = await loadAppConfig();
-      if (config.licenses.includes(code)) {
-        const licenseDate = new Date(date);
-        const now = new Date();
-        const daysDiff = (now - licenseDate) / (1000 * 60 * 60 * 24);
-        if (daysDiff < 365) {
-          mainWindow.webContents.send("license-status", {
-            valid: true,
-            code,
-            daysRemaining: Math.floor(365 - daysDiff)
-          });
-          return;
-        }
+    let licenseDataJson;
+    try {
+        licenseDataJson = await fs.readFile(LICENSE_FILE, "utf-8");
+    } catch (readError) {
+        mainWindow.webContents.send("license-status", { valid: false });
+        return;
+    }
+    const { code, date } = JSON.parse(licenseDataJson);
+    const config = await loadAppConfig();
+    if (config.licenses.includes(code)) {
+      const licenseDate = new Date(date);
+      const now = new Date();
+      const daysDiff = (now - licenseDate) / (1000 * 60 * 60 * 24);
+      if (daysDiff < 365) {
+        mainWindow.webContents.send("license-status", {
+          valid: true,
+          code,
+          daysRemaining: Math.floor(365 - daysDiff)
+        });
+        return;
       }
     }
     mainWindow.webContents.send("license-status", { valid: false });
@@ -117,6 +123,14 @@ async function checkExistingLicense() {
 app.whenReady().then(async () => {
   store = new Store();
   await initializeAppDirectories();
+
+  try {
+    fieldDetectorScriptContent = await fs.readFile(path.join(__dirname, 'src/scripts/field_detector.js'), 'utf-8');
+    console.log('field_detector.js script loaded successfully.');
+  } catch (err) {
+    console.error('Failed to load field_detector.js script at startup:', err);
+  }
+
   await createWindow();
 
   app.on('activate', async () => {
@@ -125,10 +139,27 @@ app.whenReady().then(async () => {
     }
   });
 
-  // Register global shortcut for capturing text
   const captureShortcutRet = globalShortcut.register('CommandOrControl+Shift+Q', async () => {
     console.log('Global shortcut CommandOrControl+Shift+Q pressed. Attempting to capture highlighted text.');
     let selectedText = '';
+    let targetFieldInfo = null;
+    const webInteractionEnabled = store.get('enable_web_interaction', false);
+
+    if (webInteractionEnabled && mainWindow && mainWindow.webContents && fieldDetectorScriptContent) {
+      try {
+        console.log('Executing field_detector.js content script...');
+        const detectionResult = await mainWindow.webContents.executeJavaScript(fieldDetectorScriptContent);
+        if (detectionResult && detectionResult.success) {
+          targetFieldInfo = detectionResult;
+          console.log('Field detector script succeeded:', targetFieldInfo);
+        } else if (detectionResult && detectionResult.error) {
+          console.log('Field detector script reported an error:', detectionResult.error);
+        }
+      } catch (err) {
+        console.error('Error executing field_detector.js script:', err);
+      }
+    }
+
     const originalClipboardText = clipboard.readText();
     const originalClipboardHTML = clipboard.readHTML();
     clipboard.clear();
@@ -158,7 +189,10 @@ app.whenReady().then(async () => {
     if (selectedText && selectedText.trim().length > 0) {
       console.log('Captured text:', selectedText);
       if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send('captured-text-for-ai', selectedText);
+        mainWindow.webContents.send('captured-text-for-ai', {
+          text: selectedText,
+          targetField: targetFieldInfo
+        });
       }
     } else {
       console.log('No text captured or selection was empty.');
@@ -172,11 +206,9 @@ app.whenReady().then(async () => {
     console.error('Failed to register global shortcut CommandOrControl+Shift+Q');
   }
 
-  // Register global shortcut for typing the answer
   const typeShortcutRet = globalShortcut.register('CommandOrControl+Shift+T', () => {
     console.log('Global shortcut CommandOrControl+Shift+T pressed (for typing answer)');
     if (mainWindow && mainWindow.webContents) {
-      // Send a message to the renderer to trigger the typing action
       mainWindow.webContents.send('trigger-type-answer-hotkey');
     }
   });
@@ -184,8 +216,6 @@ app.whenReady().then(async () => {
   if (!typeShortcutRet) {
     console.error('Failed to register global shortcut CommandOrControl+Shift+T');
   }
-  // console.log('Is CommandOrControl+Shift+Q registered?', globalShortcut.isRegistered('CommandOrControl+Shift+Q'));
-  // console.log('Is CommandOrControl+Shift+T registered?', globalShortcut.isRegistered('CommandOrControl+Shift+T'));
 });
 
 app.on('window-all-closed', () => {
@@ -227,14 +257,18 @@ ipcMain.handle("save-app-config", async (event, newConfig) => {
 
 ipcMain.handle("get-user-progress", async () => {
   try {
-    if (fsSync.existsSync(PROGRESS_FILE)) {
-      const progressData = await fs.readFile(PROGRESS_FILE, "utf-8");
-      return JSON.parse(progressData);
-    }
+    await fs.access(PROGRESS_FILE);
+    const progressData = await fs.readFile(PROGRESS_FILE, "utf-8");
+    return JSON.parse(progressData);
+  } catch (error) {
     const defaultProgress = { totalStudyTime: 0, exercisesCompleted: 0, lastSession: null, subjects: { matematicas: { time: 0, exercises: 0 }, español: { time: 0, exercises: 0 }, ciencias: { time: 0, exercises: 0 } } };
-    await fs.writeFile(PROGRESS_FILE, JSON.stringify(defaultProgress, null, 2));
+    try {
+        await fs.writeFile(PROGRESS_FILE, JSON.stringify(defaultProgress, null, 2));
+    } catch (writeError) {
+        console.error("Error writing default progress file:", writeError);
+    }
     return defaultProgress;
-  } catch (error) { console.error("Error al obtener progreso:", error); return null; }
+  }
 });
 
 ipcMain.handle("update-user-progress", async (event, progressUpdate) => {
@@ -285,6 +319,23 @@ ipcMain.handle('load-api-key', async () => {
   } catch (error) { console.error("Error loading API key:", error); return { success: false, error: error.message, apiKey: '' }; }
 });
 
+// === WEB INTERACTION SETTING HANDLERS ===
+ipcMain.handle('save-web-interaction-setting', async (event, isEnabled) => {
+  try {
+    if (typeof isEnabled !== 'boolean') { return { success: false, error: 'Invalid value for setting.' }; }
+    store.set('enable_web_interaction', isEnabled);
+    console.log('Web interaction setting saved:', isEnabled);
+    return { success: true };
+  } catch (error) { console.error('Error saving web interaction setting:', error); return { success: false, error: error.message }; }
+});
+
+ipcMain.handle('load-web-interaction-setting', async () => {
+  try {
+    const isEnabled = store.get('enable_web_interaction', false);
+    return { success: true, isEnabled: isEnabled };
+  } catch (error) { console.error('Error loading web interaction setting:', error); return { success: false, error: error.message, isEnabled: false }; }
+});
+
 // === OPENAI COMPLETION HANDLER ===
 ipcMain.handle('get-openai-completion', async (event, userPrompt) => {
   console.log(`OpenAI completion request received for prompt: "${userPrompt.substring(0, 50)}..."`);
@@ -330,6 +381,46 @@ ipcMain.handle('type-text-at-cursor', async (event, textToType) => {
   } catch (error) {
     console.error('Error during robot.typeString:', error);
     return { success: false, error: `Failed to type text: ${error.message}` };
+  }
+});
+
+// === TYPE INTO WEB CONTENT FIELD HANDLER ===
+ipcMain.handle('type-into-web-content-field', async (event, { selector, textToType }) => {
+  if (!mainWindow || !mainWindow.webContents) {
+    return { success: false, error: 'Main window not available.' };
+  }
+  if (typeof selector !== 'string' || typeof textToType !== 'string') {
+    return { success: false, error: 'Invalid selector or text format.' };
+  }
+
+  try {
+    console.log(`Attempting to type into web field with selector: ${selector}`);
+    // Script to focus the element and set its value.
+    const script = `
+      (() => {
+        const element = document.querySelector('${selector.replace(/'/g, "\\'")}'); // Escape selector for JS string
+        if (element) {
+          element.focus();
+          if (typeof element.value !== 'undefined') { // Input, Textarea
+            element.value = '${textToType.replace(/'/g, "\\'").replace(/\n/g, '\\n')}'; // Escape quotes and newlines
+          } else if (element.isContentEditable) { // contenteditable divs
+            element.textContent = '${textToType.replace(/'/g, "\\'").replace(/\n/g, '\\n')}';
+          } else {
+            return { success: false, error: 'Element is not an input, textarea, or contenteditable.' };
+          }
+          // element.dispatchEvent(new Event('input', { bubbles: true }));
+          // element.dispatchEvent(new Event('change', { bubbles: true }));
+          return { success: true, message: 'Text set in web field.' };
+        } else {
+          return { success: false, error: 'Element with selector "${selector.replace(/'/g, "\\'")}" not found in web page.' };
+        }
+      })();
+    `;
+    const result = await mainWindow.webContents.executeJavaScript(script);
+    return result;
+  } catch (error) {
+    console.error('Error executing script to type into web field:', error);
+    return { success: false, error: `Failed to type into web field: ${error.message}` };
   }
 });
 

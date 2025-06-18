@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const aiLoadingIndicatorEl = document.getElementById('aiLoadingIndicator');
 
   let currentAnswer = '';
+  let currentTargetFieldInfo = null;
 
   // Function to show loading state
   function showLoading(isLoading) {
@@ -31,33 +32,61 @@ document.addEventListener('DOMContentLoaded', () => {
     aiHelperStatusEl.style.display = 'block';
   }
 
-  // Function to handle the actual typing logic
+  // Updated executeTypeText function
   async function executeTypeText() {
-    if (currentAnswer) {
-      showStatus('Typing answer...', 'info');
-      try {
-        const result = await window.electronAPI.typeText(currentAnswer);
-        if (result.success) {
-          showStatus('Answer typed successfully!', 'success');
-        } else {
-          showStatus(`Error typing answer: ${result.error || 'Unknown error'}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error invoking typeText:', error);
-        showStatus(`Critical error during typing: ${error.message}`, 'error');
+    if (!currentAnswer) {
+      showStatus('No answer available to type.', 'warning');
+      return;
+    }
+
+    showStatus('Processing type request...', 'info');
+    let result; // To store the outcome of the typing attempt
+
+    if (currentTargetFieldInfo && currentTargetFieldInfo.selector) {
+      console.log(`Attempting to type into detected web field: ${currentTargetFieldInfo.selector}`);
+      result = await window.electronAPI.typeIntoWebContentField(currentTargetFieldInfo.selector, currentAnswer);
+
+      if (result.success) {
+        showStatus(result.message || 'Answer typed into web field successfully!', 'success');
+      } else {
+        // Web field typing failed
+        showStatus(`Web field typing failed: ${result.error}. If you manually focus the field, the hotkey may now use general typing.`, 'error');
+        console.warn(`Failed to type into web field ${currentTargetFieldInfo.selector}. Clearing targetFieldInfo for potential robotjs fallback on next attempt.`);
+        currentTargetFieldInfo = null; // Clear the specific target, so a retry uses robotjs
       }
     } else {
-      showStatus('No answer available to type.', 'warning');
+      // No web field pre-detected, or it was cleared after a failure
+      console.log('No web field pre-detected (or cleared after previous failure), using general typing at current cursor (robotjs).');
+      showStatus('Typing answer at current cursor...', 'info');
+      result = await window.electronAPI.typeText(currentAnswer); // General robotjs typing
+
+      if (result.success) {
+        showStatus('Answer typed successfully!', 'success');
+      } else {
+        showStatus(`Error typing answer: ${result.error || 'Unknown error'}`, 'error');
+      }
     }
   }
 
   // Listen for captured text from the main process
-  window.electronAPI.onCapturedTextForAI(async (text) => {
-    console.log('AI Helper received captured text:', text);
+  window.electronAPI.onCapturedTextForAI(async (data) => {
+    console.log('AI Helper received data:', data);
+    currentTargetFieldInfo = null; // Reset on new capture
+
+    const capturedText = data.text;
+
+    if (data.targetField && data.targetField.success) {
+      currentTargetFieldInfo = data.targetField;
+      showStatus(`Question captured. Target field found: ${currentTargetFieldInfo.selector.substring(0, 50)}...`, 'info');
+    } else if (data.targetField && data.targetField.error) {
+      showStatus(`Question captured. Field detection failed: ${data.targetField.error}`, 'warning');
+    } else {
+      showStatus('Question captured. No target field auto-detected.', 'info');
+    }
 
     aiCapturedQuestionEl.innerHTML = '';
     const p = document.createElement('p');
-    p.textContent = text;
+    p.textContent = capturedText;
     aiCapturedQuestionEl.appendChild(p);
     aiCapturedQuestionEl.classList.remove('loading-placeholder');
 
@@ -65,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentAnswer = '';
 
     try {
-      const result = await window.electronAPI.getOpenAICompletion(text);
+      const result = await window.electronAPI.getOpenAICompletion(capturedText);
       showLoading(false);
       if (result.success) {
         currentAnswer = result.response;
@@ -100,12 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
     aiAnswerDisplayEl.classList.add('loading-placeholder');
     copyAiAnswerBtn.style.display = 'none';
     typeAiAnswerBtn.style.display = 'none';
+    currentTargetFieldInfo = null;
   });
 
   // Optional: Listen for global shortcut triggered event for UI feedback
   window.electronAPI.onGlobalShortcutTriggered((data) => {
     console.log('Global shortcut triggered in renderer:', data.shortcut);
-    // Example: if (AppState.activeTab === 'aiHelperTab') { showStatus(`Hotkey ${data.shortcut} pressed...`, 'info'); }
   });
 
   // Implement "Copy Answer" button functionality
@@ -126,13 +155,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event listener for the "Type Answer" button
   if (typeAiAnswerBtn) {
-    typeAiAnswerBtn.addEventListener('click', executeTypeText); // Call the shared function
+    typeAiAnswerBtn.addEventListener('click', executeTypeText);
   }
 
   // Listen for the hotkey trigger from main process
   window.electronAPI.onTriggerTypeAnswerHotkey(() => {
     console.log('Hotkey to type answer triggered in renderer.');
-    executeTypeText(); // Call the same shared function
+    executeTypeText();
   });
 
   // Initial state message

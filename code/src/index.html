@@ -430,6 +430,19 @@
               </div>
               <p id="apiKeyMessage" class="message" style="display: none;"></p>
             </div>
+
+            <div class="setting-card">
+              <h3>🌐 Smart Web Field Detection</h3>
+              <p>Allow AI Helper to analyze web page content to find input fields near your selected text. This can help automatically target where to type answers. Requires injecting a small script into web pages.</p>
+              <div class="setting-input-container">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="enableWebInteractionCheckbox">
+                  <span class="slider round"></span>
+                </label>
+                <label for="enableWebInteractionCheckbox" style="margin-left: 10px;">Enable Feature</label>
+              </div>
+              <p id="webInteractionSettingMessage" class="message" style="display: none;"></p>
+            </div>
           </div>
           
           <div class="settings-footer">
@@ -449,7 +462,7 @@
         <div class="ai-helper-container">
           <div class="ai-section">
             <h3>Captured Question:</h3>
-            <div id="aiCapturedQuestion" class="ai-display-box loading-placeholder" style="min-height: 100px;"> <!-- Increased min-height -->
+            <div id="aiCapturedQuestion" class="ai-display-box loading-placeholder" style="min-height: 100px;">
               <h4>How to use AI Helper:</h4>
               <ol style="text-align: left; margin-left: 20px;">
                 <li><strong>Capture Question:</strong> Highlight text and press <code>Cmd/Ctrl+Shift+Q</code>.</li>
