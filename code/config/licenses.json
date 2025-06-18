@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2025-01-01T00:00:00.000Z",
+  "validLicenses": [
+    {
+      "code": "AI-2025",
+      "type": "full",
+      "description": "Licencia completa con todas las funcionalidades",
+      "features": ["calculator", "timer", "ocr", "exercises", "converter", "progress"],
+      "expirationDays": 365
+    },
+    {
+      "code": "ESCUELA-2025",
+      "type": "educational",
+      "description": "Licencia educativa para instituciones",
+      "features": ["calculator", "timer", "exercises", "converter", "progress"],
+      "expirationDays": 365
+    },
+    {
+      "code": "DEMO-2025",
+      "type": "demo",
+      "description": "Versión de demostración con funcionalidades limitadas",
+      "features": ["calculator", "timer", "converter"],
+      "expirationDays": 30
+    },
+    {
+      "code": "LICENSE-OK",
+      "type": "full",
+      "description": "Licencia de prueba para desarrollo",
+      "features": ["calculator", "timer", "ocr", "exercises", "converter", "progress"],
+      "expirationDays": 365
+    },
+    {
+      "code": "STUDENT-2025",
+      "type": "student",
+      "description": "Licencia especial para estudiantes",
+      "features": ["calculator", "timer", "exercises", "converter", "progress"],
+      "expirationDays": 180
+    }
+  ],
+  "featureDescriptions": {
+    "calculator": "Calculadora científica avanzada",
+    "timer": "Temporizador Pomodoro para gestión del tiempo",
+    "ocr": "Reconocimiento óptico de caracteres para escanear texto",
+    "exercises": "Generador de ejercicios educativos",
+    "converter": "Conversor de unidades múltiples",
+    "progress": "Seguimiento de progreso y estadísticas"
+  }
+}

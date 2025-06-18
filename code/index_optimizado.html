@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎓 Asistente Escolar AI</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- 🔐 Pantalla de Licencia -->
+  <div id="licenseScreen" class="screen license-screen">
+    <div class="license-container">
+      <div class="license-logo">
+        <div class="logo-icon">🎓</div>
+        <h1>Asistente Escolar AI</h1>
+        <p class="version">Versión 2.0 - Optimizada</p>
+      </div>
+      
+      <div class="license-form">
+        <div class="form-header">
+          <h2>🔐 Activación de Licencia</h2>
+          <p>Ingresa tu código de licencia para continuar</p>
+        </div>
+        
+        <div class="input-group">
+          <label for="licenseInput">Código de Licencia</label>
+          <input 
+            type="text" 
+            id="licenseInput" 
+            placeholder="Ej: AI-2025" 
+            autocomplete="off"
+            maxlength="20"
+          >
+          <div class="input-hint">
+            Códigos de ejemplo: AI-2025, ESCUELA-2025, DEMO-2025
+          </div>
+        </div>
+        
+        <button id="validateBtn" class="btn btn-primary">
+          <span class="btn-text">Activar Licencia</span>
+          <div class="btn-loader">
+            <div class="spinner"></div>
+          </div>
+        </button>
+        
+        <div id="licenseMessage" class="message"></div>
+      </div>
+      
+      <div class="license-footer">
+        <p>¿Necesitas ayuda? <a href="#" onclick="showHelpModal()">Centro de Ayuda</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📱 Aplicación Principal -->
+  <div id="mainApp" class="screen main-app" style="display: none;">
+    
+    <!-- Header con navegación -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-mini">🎓</div>
+        <h1>Asistente Escolar AI</h1>
+      </div>
+      
+      <nav class="header-nav">
+        <button class="nav-btn active" data-tab="dashboard">
+          📊 Panel
+        </button>
+        <button class="nav-btn" data-tab="tools">
+          🛠️ Herramientas
+        </button>
+        <button class="nav-btn" data-tab="progress">
+          📈 Progreso
+        </button>
+        <button class="nav-btn" data-tab="settings">
+          ⚙️ Configuración
+        </button>
+      </nav>
+      
+      <div class="header-right">
+        <button class="btn btn-secondary" id="themeToggle">🌙</button>
+        <div class="user-info">
+          <span id="userWelcome">¡Bienvenido!</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="app-main">
+      
+      <!-- 📊 Panel Principal -->
+      <section id="dashboard" class="tab-content active">
+        <div class="dashboard-grid">
+          
+          <div class="stats-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-content">
+              <h3>Tiempo de Estudio Hoy</h3>
+              <div class="stat-value" id="todayStudyTime">0 min</div>
+            </div>
+          </div>
+          
+          <div class="stats-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+              <h3>Ejercicios Completados</h3>
+              <div class="stat-value" id="exercisesCompleted">0</div>
+            </div>
+          </div>
+          
+          <div class="stats-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+              <h3>Meta Diaria</h3>
+              <div class="stat-value" id="dailyGoal">60 min</div>
+            </div>
+          </div>
+          
+          <div class="stats-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-content">
+              <h3>Racha Actual</h3>
+              <div class="stat-value" id="currentStreak">0 días</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dashboard-widgets">
+          <div class="widget quick-actions">
+            <h3>🚀 Acciones Rápidas</h3>
+            <div class="action-grid">
+              <button class="action-btn" onclick="startPomodoro()">
+                <span class="action-icon">🍅</span>
+                <span>Pomodoro</span>
+              </button>
+              <button class="action-btn" onclick="openCalculator()">
+                <span class="action-icon">🧮</span>
+                <span>Calculadora</span>
+              </button>
+              <button class="action-btn" onclick="generateExercise()">
+                <span class="action-icon">📝</span>
+                <span>Ejercicios</span>
+              </button>
+              <button class="action-btn" onclick="openOCR()">
+                <span class="action-icon">📷</span>
+                <span>Escanear Texto</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="widget recent-activity">
+            <h3>📋 Actividad Reciente</h3>
+            <div class="activity-list" id="activityList">
+              <div class="activity-item">
+                <span class="activity-icon">🎯</span>
+                <span class="activity-text">Aplicación iniciada</span>
+                <span class="activity-time">Ahora</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 🛠️ Herramientas -->
+      <section id="tools" class="tab-content">
+        <div class="tools-grid">
+          
+          <!-- Calculadora Científica -->
+          <div class="tool-card">
+            <div class="tool-header">
+              <h3>🧮 Calculadora Científica</h3>
+            </div>
+            <div class="calculator">
+              <div class="calc-display">
+                <input type="text" id="calcDisplay" readonly value="0">
+              </div>
+              <div class="calc-buttons">
+                <button class="calc-btn calc-clear" onclick="clearCalculator()">C</button>
+                <button class="calc-btn calc-operator" onclick="addToCalculator('/')">/</button>
+                <button class="calc-btn calc-operator" onclick="addToCalculator('*')">×</button>
+                <button class="calc-btn calc-clear" onclick="deleteLast()">⌫</button>
+                
+                <button class="calc-btn" onclick="addToCalculator('7')">7</button>
+                <button class="calc-btn" onclick="addToCalculator('8')">8</button>
+                <button class="calc-btn" onclick="addToCalculator('9')">9</button>
+                <button class="calc-btn calc-operator" onclick="addToCalculator('-')">-</button>
+                
+                <button class="calc-btn" onclick="addToCalculator('4')">4</button>
+                <button class="calc-btn" onclick="addToCalculator('5')">5</button>
+                <button class="calc-btn" onclick="addToCalculator('6')">6</button>
+                <button class="calc-btn calc-operator" onclick="addToCalculator('+')">+</button>
+                
+                <button class="calc-btn" onclick="addToCalculator('1')">1</button>
+                <button class="calc-btn" onclick="addToCalculator('2')">2</button>
+                <button class="calc-btn" onclick="addToCalculator('3')">3</button>
+                <button class="calc-btn calc-equals" onclick="calculateResult()" rowspan="2">=</button>
+                
+                <button class="calc-btn calc-zero" onclick="addToCalculator('0')">0</button>
+                <button class="calc-btn" onclick="addToCalculator('.')">.</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Temporizador Pomodoro -->
+          <div class="tool-card">
+            <div class="tool-header">
+              <h3>🍅 Temporizador Pomodoro</h3>
+            </div>
+            <div class="pomodoro-timer">
+              <div class="timer-display">
+                <div class="timer-circle">
+                  <svg class="timer-progress" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" class="timer-bg"></circle>
+                    <circle cx="50" cy="50" r="45" class="timer-progress-bar" id="timerProgress"></circle>
+                  </svg>
+                  <div class="timer-text">
+                    <div class="timer-time" id="timerTime">25:00</div>
+                    <div class="timer-label" id="timerLabel">Concentración</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="timer-controls">
+                <button class="timer-btn" id="timerStartBtn" onclick="toggleTimer()">▶️ Iniciar</button>
+                <button class="timer-btn" onclick="resetTimer()">🔄 Reiniciar</button>
+              </div>
+              
+              <div class="timer-presets">
+                <button class="preset-btn active" onclick="setTimerPreset(25)">25 min</button>
+                <button class="preset-btn" onclick="setTimerPreset(15)">15 min</button>
+                <button class="preset-btn" onclick="setTimerPreset(5)">5 min</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Conversor de Unidades -->
+          <div class="tool-card">
+            <div class="tool-header">
+              <h3>📐 Conversor de Unidades</h3>
+            </div>
+            <div class="unit-converter">
+              <div class="converter-group">
+                <label>Categoría:</label>
+                <select id="unitCategory" onchange="updateUnitOptions()">
+                  <option value="length">Longitud</option>
+                  <option value="weight">Peso</option>
+                  <option value="temperature">Temperatura</option>
+                </select>
+              </div>
+              
+              <div class="conversion-row">
+                <div class="conversion-input">
+                  <input type="number" id="fromValue" placeholder="0" oninput="convertUnits()">
+                  <select id="fromUnit"></select>
+                </div>
+                <div class="conversion-arrow">⇄</div>
+                <div class="conversion-output">
+                  <input type="number" id="toValue" readonly>
+                  <select id="toUnit" onchange="convertUnits()"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analizador de Texto -->
+          <div class="tool-card">
+            <div class="tool-header">
+              <h3>📝 Analizador de Texto</h3>
+            </div>
+            <div class="text-analyzer">
+              <textarea 
+                id="textInput" 
+                placeholder="Escribe o pega tu texto aquí para analizarlo..."
+                oninput="analyzeText()"
+              ></textarea>
+              
+              <div class="text-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Palabras:</span>
+                  <span class="stat-number" id="wordCount">0</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Caracteres:</span>
+                  <span class="stat-number" id="charCount">0</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Oraciones:</span>
+                  <span class="stat-number" id="sentenceCount">0</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Párrafos:</span>
+                  <span class="stat-number" id="paragraphCount">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 📈 Progreso -->
+      <section id="progress" class="tab-content">
+        <div class="progress-container">
+          <div class="progress-header">
+            <h2>📈 Tu Progreso de Aprendizaje</h2>
+            <p>Seguimiento de tu actividad y rendimiento académico</p>
+          </div>
+          
+          <div class="progress-grid">
+            <div class="progress-card">
+              <h3>📊 Estadísticas Generales</h3>
+              <div class="progress-stats">
+                <div class="progress-stat">
+                  <span class="stat-label">Tiempo Total de Estudio</span>
+                  <span class="stat-value" id="totalStudyTime">0 horas</span>
+                </div>
+                <div class="progress-stat">
+                  <span class="stat-label">Ejercicios Resueltos</span>
+                  <span class="stat-value" id="totalExercises">0</span>
+                </div>
+                <div class="progress-stat">
+                  <span class="stat-label">Días Activos</span>
+                  <span class="stat-value" id="activeDays">0</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="progress-card">
+              <h3>📚 Por Asignatura</h3>
+              <div class="subject-progress">
+                <div class="subject-item">
+                  <span class="subject-name">📐 Matemáticas</span>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%" data-subject="matematicas"></div>
+                  </div>
+                  <span class="subject-time">0h</span>
+                </div>
+                <div class="subject-item">
+                  <span class="subject-name">📖 Español</span>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%" data-subject="español"></div>
+                  </div>
+                  <span class="subject-time">0h</span>
+                </div>
+                <div class="subject-item">
+                  <span class="subject-name">🔬 Ciencias</span>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%" data-subject="ciencias"></div>
+                  </div>
+                  <span class="subject-time">0h</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⚙️ Configuración -->
+      <section id="settings" class="tab-content">
+        <div class="settings-container">
+          <div class="settings-header">
+            <h2>⚙️ Configuración</h2>
+            <p>Personaliza tu experiencia de aprendizaje</p>
+          </div>
+          
+          <div class="settings-grid">
+            <div class="setting-card">
+              <h3>🎨 Apariencia</h3>
+              <div class="setting-option">
+                <label>Tema:</label>
+                <select id="themeSelect" onchange="changeTheme()">
+                  <option value="dark">🌙 Oscuro</option>
+                  <option value="light">☀️ Claro</option>
+                  <option value="blue">🔵 Azul</option>
+                  <option value="green">🟢 Verde</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="setting-card">
+              <h3>🎯 Objetivos</h3>
+              <div class="setting-option">
+                <label>Meta diaria de estudio (minutos):</label>
+                <input type="number" id="dailyGoalInput" value="60" min="15" max="480" onchange="updateDailyGoal()">
+              </div>
+            </div>
+            
+            <div class="setting-card">
+              <h3>🔔 Notificaciones</h3>
+              <div class="setting-option">
+                <label>
+                  <input type="checkbox" id="soundEnabled" checked onchange="toggleSound()">
+                  Sonidos habilitados
+                </label>
+              </div>
+              <div class="setting-option">
+                <label>
+                  <input type="checkbox" id="remindersEnabled" checked onchange="toggleReminders()">
+                  Recordatorios de estudio
+                </label>
+              </div>
+            </div>
+            
+            <div class="setting-card">
+              <h3>💾 Datos</h3>
+              <div class="setting-option">
+                <button class="btn btn-secondary" onclick="createBackup()">
+                  📥 Crear Respaldo
+                </button>
+              </div>
+              <div class="setting-option">
+                <button class="btn btn-danger" onclick="resetProgress()">
+                  🗑️ Reiniciar Progreso
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-footer">
+            <div class="app-info">
+              <h4>ℹ️ Información de la Aplicación</h4>
+              <p><strong>Versión:</strong> 2.0.0</p>
+              <p><strong>Licencia:</strong> <span id="licenseStatus">Activada</span></p>
+              <p><strong>Último backup:</strong> <span id="lastBackup">Nunca</span></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 🔧 Modales y Componentes Auxiliares -->
+  
+  <!-- Modal de Ayuda -->
+  <div id="helpModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>❓ Centro de Ayuda</h3>
+        <button class="modal-close" onclick="closeModal('helpModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="help-section">
+          <h4>🔐 Códigos de Licencia de Ejemplo:</h4>
+          <ul>
+            <li><code>AI-2025</code> - Licencia completa</li>
+            <li><code>ESCUELA-2025</code> - Licencia educativa</li>
+            <li><code>DEMO-2025</code> - Versión de demostración</li>
+          </ul>
+        </div>
+        <div class="help-section">
+          <h4>❓ ¿Problemas con la activación?</h4>
+          <p>Asegúrate de escribir el código exactamente como se proporciona, incluyendo guiones.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de notificaciones -->
+  <div id="notificationContainer" class="notification-container"></div>
+
+  <!-- Scripts -->
+  <script src="scripts/app.js"></script>
+  <script src="scripts/calculator.js"></script>
+  <script src="scripts/timer.js"></script>
+  <script src="scripts/units.js"></script>
+  <script src="scripts/utils.js"></script>
+
+</body>
+</html>
