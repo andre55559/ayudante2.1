@@ -76,7 +76,6 @@ async function validateLicense() {
   
   const code = input.value.trim();
   
-  // Validación del input
   if (!code) {
     showLicenseMessage('⚠️ Por favor, ingresa un código de licencia', 'warning');
     input.classList.add('error-shake');
@@ -84,7 +83,6 @@ async function validateLicense() {
     return;
   }
   
-  // Mostrar estado de carga
   validateBtn.classList.add('loading');
   messageDiv.textContent = '';
   
@@ -94,26 +92,14 @@ async function validateLicense() {
     if (result.success) {
       AppState.isLicenseValid = true;
       showLicenseMessage('✅ ' + result.message, 'success');
-      
-      // Sonido de éxito
-      if (AppState.sounds) {
-        window.notificationAPI?.playNotificationSound('success');
-      }
-      
-      // Transición a la app principal
+      if (AppState.sounds) window.notificationAPI?.playNotificationSound('success');
       setTimeout(() => {
         showMainApp();
         loadUserData();
       }, 1500);
     } else {
       showLicenseMessage('❌ ' + result.error, 'error');
-      
-      // Sonido de error
-      if (AppState.sounds) {
-        window.notificationAPI?.playNotificationSound('error');
-      }
-      
-      // Limpiar input y enfocar
+      if (AppState.sounds) window.notificationAPI?.playNotificationSound('error');
       input.value = '';
       input.focus();
     }
@@ -138,18 +124,12 @@ function showLicenseMessage(message, type) {
 function showLicenseScreen() {
   document.getElementById('licenseScreen').style.display = 'flex';
   document.getElementById('mainApp').style.display = 'none';
-  
-  // Enfocar input de licencia
-  setTimeout(() => {
-    document.getElementById('licenseInput').focus();
-  }, 100);
+  setTimeout(() => document.getElementById('licenseInput').focus(), 100);
 }
 
 function showMainApp() {
   document.getElementById('licenseScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'flex';
-  
-  // Inicializar componentes de la app principal
   initializeMainApp();
 }
 
@@ -158,24 +138,12 @@ function showMainApp() {
  */
 async function initializeMainApp() {
   try {
-    // Cargar configuración
     AppState.config = await window.electronAPI.getAppConfig();
-    
-    // Aplicar configuración
     applyUserConfig();
-    
-    // Inicializar navegación
     initializeNavigation();
-    
-    // Inicializar herramientas
-    initializeTools();
-    
-    // Mostrar bienvenida
+    initializeTools(); // Ensure tools are initialized (calculator etc might need this)
     showWelcomeMessage();
-    
-    // Registrar actividad
     await logActivity('🎯 Aplicación iniciada');
-    
     console.log('🏠 App principal inicializada');
   } catch (error) {
     console.error('Error al inicializar app principal:', error);
@@ -193,15 +161,11 @@ async function loadUserData() {
 }
 
 function applyUserConfig() {
-  if (AppState.config.theme) {
-    changeTheme(AppState.config.theme);
-  }
-  
+  if (AppState.config.theme) changeTheme(AppState.config.theme);
   if (AppState.config.dailyGoal) {
     document.getElementById('dailyGoalInput').value = AppState.config.dailyGoal;
     document.getElementById('dailyGoal').textContent = AppState.config.dailyGoal + ' min';
   }
-  
   AppState.sounds = AppState.config.sounds !== false;
   document.getElementById('soundEnabled').checked = AppState.sounds;
 }
@@ -211,49 +175,32 @@ function applyUserConfig() {
  */
 function initializeNavigation() {
   const navButtons = document.querySelectorAll('.nav-btn');
-  
   navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tabName = btn.dataset.tab;
-      switchTab(tabName);
-    });
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
-  
-  // Mostrar tab inicial
-  switchTab('dashboard');
+  switchTab('dashboard'); // Default tab
 }
 
 function switchTab(tabName) {
-  // Actualizar botones de navegación
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
   
-  // Mostrar contenido del tab
-  document.querySelectorAll('.tab-content').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  document.getElementById(tabName).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.getElementById(tabName)?.classList.add('active');
   
   AppState.activeTab = tabName;
   
-  // Ejecutar lógica específica del tab
   switch (tabName) {
-    case 'dashboard':
-      updateDashboardStats();
-      break;
-    case 'tools':
-      initializeTools();
-      break;
-    case 'progress':
-      updateProgressDisplay();
-      break;
-    case 'settings':
-      loadSettingsData();
+    case 'dashboard': updateDashboardStats(); break;
+    case 'tools': initializeTools(); break; // Re-initialize or update tools if needed
+    case 'progress': updateProgressDisplay(); break;
+    case 'settings': loadSettingsData(); break;
+    case 'aiHelperTab':
+      // if (typeof window.initializeAiHelper === 'function') {
+      //   window.initializeAiHelper();
+      // }
       break;
   }
-  
   console.log(`📋 Cambiado a tab: ${tabName}`);
 }
 
@@ -263,102 +210,87 @@ function switchTab(tabName) {
 async function updateDashboardStats() {
   try {
     const progress = AppState.progress || {};
-    
-    // Tiempo de estudio hoy (simulado por ahora)
     const todayTime = getTodayStudyTime();
     document.getElementById('todayStudyTime').textContent = `${todayTime} min`;
-    
-    // Ejercicios completados
-    document.getElementById('exercisesCompleted').textContent = 
-      progress.exercisesCompleted || 0;
-    
-    // Racha actual (simulada)
+    document.getElementById('exercisesCompleted').textContent = progress.exercisesCompleted || 0;
     const streak = calculateCurrentStreak();
     document.getElementById('currentStreak').textContent = `${streak} días`;
-    
-    // Actualizar gráfico de progreso de la meta diaria
     updateDailyGoalProgress(todayTime);
-    
   } catch (error) {
     console.error('Error al actualizar estadísticas:', error);
   }
 }
 
 function getTodayStudyTime() {
-  // Por ahora simulamos el tiempo de estudio del día
-  // En una implementación real, esto vendría de la base de datos
   const today = new Date().toDateString();
-  const sessionTime = parseInt(localStorage.getItem(`studyTime_${today}`) || '0');
-  return sessionTime;
+  return parseInt(localStorage.getItem(`studyTime_${today}`) || '0');
 }
 
 function calculateCurrentStreak() {
-  // Simulamos el cálculo de la racha actual
-  // En una implementación real, esto vendría de la base de datos
   return parseInt(localStorage.getItem('currentStreak') || '0');
 }
 
 function updateDailyGoalProgress(currentTime) {
   const dailyGoal = parseInt(document.getElementById('dailyGoalInput').value || '60');
   const progressPercent = Math.min((currentTime / dailyGoal) * 100, 100);
-  
-  // Actualizar el color del tiempo basado en el progreso
   const timeElement = document.getElementById('todayStudyTime');
-  if (progressPercent >= 100) {
-    timeElement.style.color = 'var(--success)';
-  } else if (progressPercent >= 50) {
-    timeElement.style.color = 'var(--warning)';
-  } else {
-    timeElement.style.color = 'var(--primary)';
-  }
+  if (progressPercent >= 100) timeElement.style.color = 'var(--success)';
+  else if (progressPercent >= 50) timeElement.style.color = 'var(--warning)';
+  else timeElement.style.color = 'var(--primary)';
 }
 
 /**
  * 🔧 Configuración de Event Listeners
  */
 function setupEventListeners() {
-  // Validación de licencia
   const licenseInput = document.getElementById('licenseInput');
-  if (licenseInput) {
-    licenseInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        validateLicense();
+  if (licenseInput) licenseInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') validateLicense(); });
+  
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+
+  const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+  if (saveApiKeyBtn) {
+    saveApiKeyBtn.addEventListener('click', async () => {
+      const apiKeyInput = document.getElementById('apiKeyInput');
+      const apiKey = apiKeyInput.value.trim();
+      const apiKeyMessage = document.getElementById('apiKeyMessage');
+      if (!apiKey) {
+        apiKeyMessage.textContent = 'La clave API no puede estar vacía.';
+        apiKeyMessage.className = 'message error';
+        apiKeyMessage.style.display = 'block';
+        return;
       }
+      try {
+        const result = await window.electronAPI.saveApiKey(apiKey);
+        if (result.success) {
+          apiKeyMessage.textContent = '¡Clave API guardada correctamente!';
+          apiKeyMessage.className = 'message success';
+        } else {
+          apiKeyMessage.textContent = 'Error al guardar la clave API: ' + (result.error || 'Error desconocido');
+          apiKeyMessage.className = 'message error';
+        }
+      } catch (error) {
+        console.error('Error invoking saveApiKey:', error);
+        apiKeyMessage.textContent = 'Ocurrió un error inesperado al guardar.';
+        apiKeyMessage.className = 'message error';
+      }
+      apiKeyMessage.style.display = 'block';
     });
   }
   
-  // Toggle de tema
-  const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', toggleTheme);
-  }
-  
-  // Atajos de teclado
   document.addEventListener('keydown', handleKeyboardShortcuts);
-  
-  // Prevenir zoom con Ctrl + scroll
-  document.addEventListener('wheel', (e) => {
-    if (e.ctrlKey) {
-      e.preventDefault();
-    }
-  }, { passive: false });
+  document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 }
 
 function handleKeyboardShortcuts(e) {
-  // Ctrl/Cmd + número para cambiar tabs
-  if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '4') {
+  if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '5') { // Updated to 5 tabs
     e.preventDefault();
-    const tabs = ['dashboard', 'tools', 'progress', 'settings'];
+    const tabs = ['dashboard', 'tools', 'progress', 'settings', 'aiHelperTab']; // Added aiHelperTab
     const tabIndex = parseInt(e.key) - 1;
-    if (tabs[tabIndex]) {
-      switchTab(tabs[tabIndex]);
-    }
+    if (tabs[tabIndex]) switchTab(tabs[tabIndex]);
   }
-  
-  // Escape para cerrar modales
-  if (e.key === 'Escape') {
-    closeAllModals();
-  }
+  if (e.key === 'Escape') closeAllModals();
 }
 
 /**
@@ -371,30 +303,18 @@ function initializeTheme() {
 
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  changeTheme(newTheme);
+  changeTheme(currentTheme === 'dark' ? 'light' : 'dark');
 }
 
 function changeTheme(themeName = 'dark') {
   document.documentElement.setAttribute('data-theme', themeName);
   localStorage.setItem('selectedTheme', themeName);
   AppState.theme = themeName;
-  
-  // Actualizar icono del botón de tema
   const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.textContent = themeName === 'dark' ? '☀️' : '🌙';
-  }
-  
-  // Actualizar selector en configuración
+  if (themeToggle) themeToggle.textContent = themeName === 'dark' ? '☀️' : '🌙';
   const themeSelect = document.getElementById('themeSelect');
-  if (themeSelect) {
-    themeSelect.value = themeName;
-  }
-  
-  // Guardar en configuración
+  if (themeSelect) themeSelect.value = themeName;
   saveAppConfig({ theme: themeName });
-  
   console.log(`🎨 Tema cambiado a: ${themeName}`);
 }
 
@@ -420,18 +340,15 @@ async function updateDailyGoal() {
 }
 
 async function toggleSound() {
-  const enabled = document.getElementById('soundEnabled').checked;
-  AppState.sounds = enabled;
-  await saveAppConfig({ sounds: enabled });
-  showNotification('Configuración', 
-    enabled ? 'Sonidos activados' : 'Sonidos desactivados', 'info');
+  AppState.sounds = document.getElementById('soundEnabled').checked;
+  await saveAppConfig({ sounds: AppState.sounds });
+  showNotification('Configuración', AppState.sounds ? 'Sonidos activados' : 'Sonidos desactivados', 'info');
 }
 
 async function toggleReminders() {
   const enabled = document.getElementById('remindersEnabled').checked;
   await saveAppConfig({ reminders: enabled });
-  showNotification('Configuración', 
-    enabled ? 'Recordatorios activados' : 'Recordatorios desactivados', 'info');
+  showNotification('Configuración', enabled ? 'Recordatorios activados' : 'Recordatorios desactivados', 'info');
 }
 
 /**
@@ -439,24 +356,19 @@ async function toggleReminders() {
  */
 function updateProgressDisplay() {
   const progress = AppState.progress || {};
-  
-  // Estadísticas generales
   const totalTime = Math.floor((progress.totalStudyTime || 0) / 60);
   document.getElementById('totalStudyTime').textContent = `${totalTime} horas`;
   document.getElementById('totalExercises').textContent = progress.exercisesCompleted || 0;
   document.getElementById('activeDays').textContent = progress.activeDays || 0;
   
-  // Progreso por asignatura
   const subjects = progress.subjects || {};
   Object.keys(subjects).forEach(subject => {
     const subjectData = subjects[subject];
     const progressBar = document.querySelector(`[data-subject="${subject}"]`);
     const timeSpan = progressBar?.parentElement.parentElement.querySelector('.subject-time');
-    
     if (progressBar && timeSpan) {
       const hours = Math.floor((subjectData.time || 0) / 60);
-      const percentage = Math.min((subjectData.time || 0) / 3600 * 100, 100); // 60 horas = 100%
-      
+      const percentage = Math.min((subjectData.time || 0) / 3600 * 100, 100);
       progressBar.style.width = `${percentage}%`;
       timeSpan.textContent = `${hours}h`;
     }
@@ -465,8 +377,8 @@ function updateProgressDisplay() {
 
 async function updateUserProgress(updates) {
   try {
-    AppState.progress = { ...AppState.progress, ...updates };
-    await window.electronAPI.updateUserProgress(updates);
+    AppState.progress = { ...(AppState.progress || {}), ...updates }; // Ensure AppState.progress is not null
+    await window.electronAPI.updateUserProgress(AppState.progress); // Send the whole updated object
     updateProgressDisplay();
     updateDashboardStats();
   } catch (error) {
@@ -478,23 +390,13 @@ async function resetProgress() {
   if (confirm('⚠️ ¿Estás seguro de que quieres reiniciar todo tu progreso? Esta acción no se puede deshacer.')) {
     try {
       const defaultProgress = {
-        totalStudyTime: 0,
-        exercisesCompleted: 0,
-        activeDays: 0,
-        lastSession: null,
-        subjects: {
-          matematicas: { time: 0, exercises: 0 },
-          español: { time: 0, exercises: 0 },
-          ciencias: { time: 0, exercises: 0 }
-        }
+        totalStudyTime: 0, exercisesCompleted: 0, activeDays: 0, lastSession: null,
+        subjects: { matematicas: { time: 0, exercises: 0 }, español: { time: 0, exercises: 0 }, ciencias: { time: 0, exercises: 0 } }
       };
-      
       await window.electronAPI.updateUserProgress(defaultProgress);
       AppState.progress = defaultProgress;
-      
       updateProgressDisplay();
       updateDashboardStats();
-      
       showNotification('Progreso', 'Progreso reiniciado correctamente', 'success');
     } catch (error) {
       console.error('Error al reiniciar progreso:', error);
@@ -510,24 +412,12 @@ async function logActivity(activity) {
   try {
     const activityList = document.getElementById('activityList');
     if (!activityList) return;
-    
     const activityItem = document.createElement('div');
     activityItem.className = 'activity-item slide-up';
-    activityItem.innerHTML = `
-      <span class="activity-icon">📝</span>
-      <span class="activity-text">${activity}</span>
-      <span class="activity-time">Ahora</span>
-    `;
-    
-    // Insertar al principio de la lista
+    activityItem.innerHTML = `<span class="activity-icon">📝</span><span class="activity-text">${activity}</span><span class="activity-time">Ahora</span>`;
     activityList.insertBefore(activityItem, activityList.firstChild);
-    
-    // Limitar a 5 actividades mostradas
     const items = activityList.querySelectorAll('.activity-item');
-    if (items.length > 5) {
-      items[items.length - 1].remove();
-    }
-    
+    if (items.length > 5) items[items.length - 1].remove();
     console.log('📝 Actividad registrada:', activity);
   } catch (error) {
     console.error('Error al registrar actividad:', error);
@@ -540,12 +430,8 @@ async function logActivity(activity) {
 function showNotification(title, message, type = 'info') {
   if (window.notificationAPI) {
     window.notificationAPI.showNotification(title, message, type);
-    
-    if (AppState.sounds) {
-      window.notificationAPI.playNotificationSound(type);
-    }
+    if (AppState.sounds) window.notificationAPI.playNotificationSound(type);
   } else {
-    // Fallback para navegadores sin la API personalizada
     console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
   }
 }
@@ -555,24 +441,16 @@ function showNotification(title, message, type = 'info') {
  */
 function showHelpModal() {
   const modal = document.getElementById('helpModal');
-  if (modal) {
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
+  if (modal) { modal.classList.add('active'); document.body.style.overflow = 'hidden'; }
 }
 
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.remove('active');
-    document.body.style.overflow = 'auto';
-  }
+  if (modal) { modal.classList.remove('active'); document.body.style.overflow = 'auto'; }
 }
 
 function closeAllModals() {
-  document.querySelectorAll('.modal').forEach(modal => {
-    modal.classList.remove('active');
-  });
+  document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('active'));
   document.body.style.overflow = 'auto';
 }
 
@@ -582,7 +460,6 @@ function closeAllModals() {
 async function createBackup() {
   try {
     const result = await window.electronAPI.createBackup();
-    
     if (result.success) {
       document.getElementById('lastBackup').textContent = new Date().toLocaleString();
       showNotification('Respaldo', 'Respaldo creado correctamente', 'success');
@@ -602,16 +479,7 @@ function showWelcomeMessage() {
   const welcomeElement = document.getElementById('userWelcome');
   if (welcomeElement) {
     const hour = new Date().getHours();
-    let greeting;
-    
-    if (hour < 12) {
-      greeting = '¡Buenos días!';
-    } else if (hour < 18) {
-      greeting = '¡Buenas tardes!';
-    } else {
-      greeting = '¡Buenas noches!';
-    }
-    
+    let greeting = hour < 12 ? '¡Buenos días!' : (hour < 18 ? '¡Buenas tardes!' : '¡Buenas noches!');
     welcomeElement.textContent = greeting;
   }
 }
@@ -620,22 +488,49 @@ function showWelcomeMessage() {
  * ⚙️ Configuración de Settings
  */
 function loadSettingsData() {
-  // Cargar información de la licencia
+  window.electronAPI.loadApiKey().then(result => {
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const apiKeyMessage = document.getElementById('apiKeyMessage');
+    if (apiKeyInput) {
+      if (result.success && result.apiKey) {
+        apiKeyInput.value = result.apiKey;
+      } else if (!result.success && result.error && apiKeyMessage) {
+        apiKeyMessage.textContent = 'Error al cargar la clave API: ' + result.error;
+        apiKeyMessage.className = 'message error';
+        apiKeyMessage.style.display = 'block';
+      }
+    }
+  }).catch(err => {
+    console.error('Error invoking loadApiKey:', err);
+    const apiKeyMessage = document.getElementById('apiKeyMessage');
+    if (apiKeyMessage) {
+      apiKeyMessage.textContent = 'Error crítico al invocar loadApiKey.';
+      apiKeyMessage.className = 'message error';
+      apiKeyMessage.style.display = 'block';
+    }
+  });
+
   const licenseStatus = document.getElementById('licenseStatus');
-  if (licenseStatus) {
-    licenseStatus.textContent = AppState.isLicenseValid ? 'Activada ✅' : 'No activada ❌';
-  }
+  if (licenseStatus) licenseStatus.textContent = AppState.isLicenseValid ? 'Activada ✅' : 'No activada ❌';
   
-  // Cargar último backup
   const lastBackup = localStorage.getItem('lastBackup');
   const lastBackupElement = document.getElementById('lastBackup');
-  if (lastBackupElement) {
-    lastBackupElement.textContent = lastBackup || 'Nunca';
-  }
+  if (lastBackupElement) lastBackupElement.textContent = lastBackup || 'Nunca';
 }
 
 /**
- * 🔧 Utilidades Globales
+ * 🛠️ Funciones de Herramientas (Placeholder - definir en sus propios archivos o aquí si son simples)
+ */
+function initializeTools() {
+  // Initialize calculator, pomodoro, etc. if they need specific setup when tab is shown or app starts
+  // For now, their event listeners are in index.html or respective JS files.
+  // If calculator.js, timer.js, units.js, utils.js manage their own state and init, this might be minimal.
+  console.log("🛠️ Herramientas inicializadas/actualizadas");
+}
+
+
+/**
+ * 🔧 Utilidades Globales (expuestas a HTML via window)
  */
 window.validateLicense = validateLicense;
 window.showHelpModal = showHelpModal;
@@ -646,6 +541,10 @@ window.toggleSound = toggleSound;
 window.toggleReminders = toggleReminders;
 window.createBackup = createBackup;
 window.resetProgress = resetProgress;
+
+// Functions for tools - these might be better in their own JS files if complex
+// For now, keeping it simple, assuming they are called from HTML onclick
+// Calculator functions are in calculator.js, etc.
 
 // Debug en desarrollo
 if (process?.env?.NODE_ENV === 'development') {

@@ -79,6 +79,9 @@
         <button class="nav-btn" data-tab="settings">
           ⚙️ Configuración
         </button>
+        <button class="nav-btn" data-tab="aiHelperTab">
+          💡 AI Helper
+        </button>
       </nav>
       
       <div class="header-right">
@@ -417,6 +420,16 @@
                 </button>
               </div>
             </div>
+
+            <div class="setting-card">
+              <h3>🔑 OpenAI API Key</h3>
+              <p>Ingresa tu clave API de OpenAI para habilitar funciones de IA. Tu clave se guarda localmente.</p>
+              <div class="input-group">
+                <input type="password" id="apiKeyInput" placeholder="sk-...">
+                <button id="saveApiKeyBtn" class="btn btn-primary">Guardar Clave</button>
+              </div>
+              <p id="apiKeyMessage" class="message" style="display: none;"></p>
+            </div>
           </div>
           
           <div class="settings-footer">
@@ -429,6 +442,31 @@
           </div>
         </div>
       </section>
+
+      <!-- 💡 AI Helper Tab -->
+      <div id="aiHelperTab" class="tab-content">
+        <h2>💡 AI Helper</h2>
+        <div class="ai-helper-container">
+          <div class="ai-section">
+            <h3>Captured Question:</h3>
+            <div id="aiCapturedQuestion" class="ai-display-box loading-placeholder" style="min-height: 50px;">
+              <p>Press CommandOrControl+Shift+Q on highlighted text to capture.</p>
+            </div>
+          </div>
+          <div class="ai-section">
+            <h3>AI's Answer:</h3>
+            <div id="aiAnswerDisplay" class="ai-display-box loading-placeholder" style="min-height: 100px;">
+              <p>Answer will appear here...</p>
+            </div>
+            <button id="copyAiAnswerBtn" class="btn btn-secondary" style="margin-top: 10px; display: none;">Copy Answer</button>
+          </div>
+          <div id="aiHelperStatus" class="message" style="display: none; margin-top: 15px;"></div>
+          <div id="aiLoadingIndicator" style="display: none; margin-top: 10px;">
+            <p>🧠 Accessing AI wisdom... please wait.</p>
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
 
     </main>
   </div>
@@ -468,6 +506,7 @@
   <script src="scripts/timer.js"></script>
   <script src="scripts/units.js"></script>
   <script src="scripts/utils.js"></script>
+  <script src="scripts/ai_helper.js"></script>
 
 </body>
 </html>
