@@ -73,6 +73,9 @@
         <button class="nav-btn" data-tab="tools">
           🛠️ Herramientas
         </button>
+        <button class="nav-btn" data-tab="readerTab">
+          📚 Reader
+        </button>
         <button class="nav-btn" data-tab="progress">
           📈 Progreso
         </button>
@@ -304,6 +307,27 @@
         </div>
       </section>
 
+      <!-- 📚 Reader Tab -->
+      <div id="readerTab" class="tab-content">
+        <h2>📚 EPUB Reader</h2>
+        <div class="reader-controls">
+          <button id="openEpubFileBtn" class="btn btn-primary">Open EPUB File</button>
+        </div>
+        <div id="epubViewport" style="width: 100%; height: 70vh; border: 1px solid #ccc; overflow: hidden; margin-top: 10px;">
+          <p style="text-align: center; padding-top: 20px;">Please open an EPUB file to start reading.</p>
+        </div>
+        <div class="reader-navigation" style="margin-top: 10px; text-align: center;">
+          <button id="prevPageBtn" class="btn btn-secondary">&laquo; Previous</button>
+          <span id="epubPageInfo" style="margin: 0 15px;">Page X of Y</span>
+          <button id="nextPageBtn" class="btn btn-secondary">Next &raquo;</button>
+        </div>
+        <div id="epubLoadingIndicator" style="display: none; margin-top: 10px; text-align: center;">
+          <p>Loading EPUB...</p>
+          <div class="content-loader-spinner"></div> <!-- Updated class -->
+        </div>
+        <div id="epubErrorDisplay" class="message error" style="display: none; margin-top: 10px;"></div>
+      </div>
+
       <!-- 📈 Progreso -->
       <section id="progress" class="tab-content">
         <div class="progress-container">
@@ -488,7 +512,7 @@
           <div id="aiHelperStatus" class="message" style="display: none; margin-top: 15px;"></div>
           <div id="aiLoadingIndicator" style="display: none; margin-top: 10px;">
             <p>🧠 Accessing AI wisdom... please wait.</p>
-            <div class="spinner"></div>
+            <div class="content-loader-spinner"></div> <!-- Updated class -->
           </div>
         </div>
       </div>
@@ -532,6 +556,8 @@
   <script src="scripts/units.js"></script>
   <script src="scripts/utils.js"></script>
   <script src="scripts/ai_helper.js"></script>
+  <script src="../node_modules/epubjs/dist/epub.min.js"></script>
+  <script src="scripts/epub_reader.js"></script>
 
 </body>
 </html>

@@ -171,6 +171,11 @@ function switchTab(tabName) {
   switch (tabName) {
     case 'dashboard': updateDashboardStats(); break;
     case 'tools': initializeTools(); break;
+    case 'readerTab':
+      // if (typeof window.initializeEpubReader === 'function') {
+      //  window.initializeEpubReader();
+      // }
+      break;
     case 'progress': updateProgressDisplay(); break;
     case 'settings': loadSettingsData(); break;
     case 'aiHelperTab': break;
@@ -295,9 +300,10 @@ function setupEventListeners() {
 }
 
 function handleKeyboardShortcuts(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '5') {
+  if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '6') { // Max key updated to 6
     e.preventDefault();
-    const tabs = ['dashboard', 'tools', 'progress', 'settings', 'aiHelperTab'];
+    // Order: Dashboard, Tools, Reader, Progress, Settings, AI Helper
+    const tabs = ['dashboard', 'tools', 'readerTab', 'progress', 'settings', 'aiHelperTab'];
     const tabIndex = parseInt(e.key) - 1;
     if (tabs[tabIndex]) switchTab(tabs[tabIndex]);
   }
@@ -501,7 +507,6 @@ function showWelcomeMessage() {
  * ⚙️ Configuración de Settings
  */
 function loadSettingsData() {
-  // Load API Key
   window.electronAPI.loadApiKey().then(result => {
     const apiKeyInput = document.getElementById('apiKeyInput');
     const apiKeyMessage = document.getElementById('apiKeyMessage');
@@ -526,7 +531,6 @@ function loadSettingsData() {
     }
   });
 
-  // Load Web Interaction Setting
   window.electronAPI.loadWebInteractionSetting().then(result => {
     const checkbox = document.getElementById('enableWebInteractionCheckbox');
     if (checkbox) {
@@ -534,7 +538,7 @@ function loadSettingsData() {
         checkbox.checked = result.isEnabled;
       } else {
         console.error('Failed to load web interaction setting:', result.error);
-        checkbox.checked = false; // Default to false on error
+        checkbox.checked = false;
       }
     }
   }).catch(err => {

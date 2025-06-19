@@ -16,8 +16,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   updateUserProgress: (progressUpdate) => ipcRenderer.invoke("update-user-progress", progressUpdate),
 
   // === 📁 MANEJO DE ARCHIVOS ===
-  showFileDialog: (options = {}) => ipcRenderer.invoke("show-file-dialog", options),
+  showFileDialog: (options = {}) => ipcRenderer.invoke("show-file-dialog", options), // Generic file dialog
   createBackup: () => ipcRenderer.invoke("create-backup"),
+
+  // === OPEN EPUB FILE FUNCTION ===
+  /**
+   * Shows a dialog to select an EPUB file.
+   * @returns {Promise<{success: boolean, filePath?: string, error?: string}>}
+   */
+  openEpubFile: () => ipcRenderer.invoke('open-epub-file'),
 
   // === 📡 EVENTOS Y LISTENERS ===
   onLicenseStatus: (callback) => {
@@ -57,7 +64,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getOpenAICompletion: (prompt) => ipcRenderer.invoke('get-openai-completion', prompt),
 
   // === AI HELPER EVENT LISTENERS ===
-  onCapturedTextForAI: (callback) => ipcRenderer.on('captured-text-for-ai', (event, data) => callback(data)), // Modified to pass 'data'
+  onCapturedTextForAI: (callback) => ipcRenderer.on('captured-text-for-ai', (event, data) => callback(data)),
   onNoTextCapturedForAI: (callback) => ipcRenderer.on('no-text-captured-for-ai', (event) => callback()),
   onGlobalShortcutTriggered: (callback) => ipcRenderer.on('global-shortcut-triggered', (event, data) => callback(data)),
 
@@ -65,15 +72,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   typeText: (text) => ipcRenderer.invoke('type-text-at-cursor', text),
 
   // === TRIGGER TYPE ANSWER LISTENER ===
-  onTriggerTypeAnswerHotkey: (callback) => ipcRenderer.on('trigger-type-answer-hotkey', () => callback()), // Added comma
+  onTriggerTypeAnswerHotkey: (callback) => ipcRenderer.on('trigger-type-answer-hotkey', () => callback()),
 
   // === TYPE INTO WEB CONTENT FIELD FUNCTION ===
-  /**
-   * Attempts to type text into a specified input field within a web page.
-   * @param {string} selector - The CSS selector of the target input field.
-   * @param {string} text - The text to type.
-   * @returns {Promise<{success: boolean, error?: string, message?: string}>}
-   */
   typeIntoWebContentField: (selector, text) => ipcRenderer.invoke('type-into-web-content-field', { selector, text })
 });
 

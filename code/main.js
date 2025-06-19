@@ -280,7 +280,36 @@ ipcMain.handle("update-user-progress", async (event, progressUpdate) => {
   } catch (error) { console.error("Error al actualizar progreso:", error); return { success: false, error: error.message }; }
 });
 
-ipcMain.handle("show-file-dialog", async (event, options) => {
+// === OPEN EPUB FILE HANDLER ===
+ipcMain.handle('open-epub-file', async () => {
+  if (!mainWindow) {
+    return { success: false, error: 'Main window not available.', filePaths: null };
+  }
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Open EPUB File',
+      properties: ['openFile'],
+      filters: [
+        { name: 'EPUB Files', extensions: ['epub'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      console.log('EPUB file selection was canceled.');
+      return { success: false, error: 'File selection canceled.', filePaths: null };
+    } else {
+      console.log('EPUB file selected:', result.filePaths[0]);
+      return { success: true, filePath: result.filePaths[0] };
+    }
+  } catch (error) {
+    console.error('Error showing open EPUB dialog:', error);
+    return { success: false, error: `Error opening file dialog: ${error.message}`, filePaths: null };
+  }
+});
+
+ipcMain.handle("show-file-dialog", async (event, options) => { // This was an older generic one, ensure it's distinct or integrated if needed.
+                                                              // For EPUB, the new one is specific. This one might be for OCR or other purposes.
   try {
     const result = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [ { name: 'Imágenes', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp'] }, { name: 'Todos los archivos', extensions: ['*'] } ], ...options });
     return result;
@@ -395,21 +424,18 @@ ipcMain.handle('type-into-web-content-field', async (event, { selector, textToTy
 
   try {
     console.log(`Attempting to type into web field with selector: ${selector}`);
-    // Script to focus the element and set its value.
     const script = `
       (() => {
-        const element = document.querySelector('${selector.replace(/'/g, "\\'")}'); // Escape selector for JS string
+        const element = document.querySelector('${selector.replace(/'/g, "\\'")}');
         if (element) {
           element.focus();
-          if (typeof element.value !== 'undefined') { // Input, Textarea
-            element.value = '${textToType.replace(/'/g, "\\'").replace(/\n/g, '\\n')}'; // Escape quotes and newlines
-          } else if (element.isContentEditable) { // contenteditable divs
+          if (typeof element.value !== 'undefined') {
+            element.value = '${textToType.replace(/'/g, "\\'").replace(/\n/g, '\\n')}';
+          } else if (element.isContentEditable) {
             element.textContent = '${textToType.replace(/'/g, "\\'").replace(/\n/g, '\\n')}';
           } else {
             return { success: false, error: 'Element is not an input, textarea, or contenteditable.' };
           }
-          // element.dispatchEvent(new Event('input', { bubbles: true }));
-          // element.dispatchEvent(new Event('change', { bubbles: true }));
           return { success: true, message: 'Text set in web field.' };
         } else {
           return { success: false, error: 'Element with selector "${selector.replace(/'/g, "\\'")}" not found in web page.' };

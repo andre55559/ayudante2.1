@@ -73,6 +73,16 @@
   
   --border: #e2e8f0;
   --border-light: #cbd5e1;
+
+  /* Update EPUB viewport and AI display box for light theme */
+  #epubViewport, .ai-display-box {
+    background-color: #f8f9fa; /* Or var(--bg-secondary) if preferred */
+    border-color: #d1d1d1; /* Or var(--border-light) */
+    color: #212529; /* Darker text for light background */
+  }
+  .loading-placeholder p {
+    color: #6c757d; /* Muted text for placeholder on light bg */
+  }
 }
 
 /* === 🔵 TEMA AZUL === */
@@ -950,6 +960,68 @@ body {
   margin-right: var(--spacing-sm);
 }
 
+/* Toggle Switch specific styles */
+.setting-input-container {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px; /* Smaller width */
+  height: 28px; /* Smaller height */
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-tertiary);
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px; /* Smaller handle */
+  width: 20px;  /* Smaller handle */
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px); /* Adjusted for smaller size */
+}
+
+.slider.round {
+  border-radius: 28px; /* Adjusted for smaller height */
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+
 .settings-footer {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -1030,7 +1102,7 @@ body {
   transform: translate(-50%, -50%);
 }
 
-.spinner {
+.spinner { /* This is the existing button spinner */
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.3);
@@ -1479,4 +1551,119 @@ body {
   20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
+/* Content Loader Spinner */
+.content-loader-spinner {
+  border: 5px solid rgba(0, 0, 0, 0.1); /* Slightly thicker border */
+  width: 50px;  /* Larger */
+  height: 50px; /* Larger */
+  border-radius: 50%;
+  border-left-color: var(--primary); /* Use theme primary color */
+  animation: content-spin 1.2s linear infinite; /* Slightly different animation name if needed */
+  margin: 20px auto; /* Centered */
+}
+
+@keyframes content-spin { /* Different animation name to avoid conflict if 'spin' is very generic */
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 console.log("🎨 Estilos CSS cargados correctamente");
+
+/* EPUB Reader Specific Styles */
+.reader-controls {
+  margin-bottom: 15px;
+  display: flex; /* Basic flex for alignment */
+  gap: 10px; /* Space between buttons if multiple */
+  align-items: center;
+}
+
+#epubViewport {
+  background-color: #f0f0f0; /* A slightly different light background for the reading area */
+  /* border is already inline, could be moved here if preferred */
+  /* Consider adding min-height here if not relying solely on inline vh */
+}
+
+/* Ensure text inside epub viewport is readable on light background */
+[data-theme="light"] #epubViewport {
+    color: #212529; /* Dark text for light background */
+}
+/* Ensure text inside epub viewport is readable on dark background (default) */
+[data-theme="dark"] #epubViewport {
+    background-color: var(--bg-secondary); /* Or a suitable dark bg for content */
+    color: var(--text-primary); /* Light text for dark background */
+}
+/* For other themes, you might need specific overrides or ensure epub.js handles theming */
+
+
+.reader-navigation {
+  display: flex;
+  justify-content: center; /* Center nav items */
+  align-items: center;
+  gap: 15px; /* Space around page info and buttons */
+  padding: 10px 0;
+}
+
+#epubPageInfo {
+  font-weight: bold;
+  margin: 0 10px; /* Adjusted margin slightly */
+}
+
+/* AI Helper Specific Styles */
+.ai-helper-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Space between sections */
+}
+
+.ai-section {
+  /* Add any specific section styling if needed */
+}
+
+.ai-section h3 {
+  margin-top: 0; /* Reset top margin if sections are stacked */
+  margin-bottom: 8px;
+}
+
+.ai-display-box {
+  background-color: #f0f0f0; /* Consistent light background */
+  border: 1px solid #d1d1d1; /* Slightly softer border */
+  padding: 12px;
+  margin-top: 5px;
+  border-radius: 4px;
+  min-height: 50px; /* Ensure it has some height even when empty initially */
+  word-wrap: break-word; /* Ensure long text wraps */
+  color: #212529; /* Darker text for light background */
+}
+
+/* Theme adjustments for ai-display-box */
+[data-theme="dark"] .ai-display-box {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-light);
+    color: var(--text-primary);
+}
+
+.ai-display-box pre { /* Style for <pre> tag used for AI answer */
+  white-space: pre-wrap; /* Allow wrapping for long lines in <pre> */
+  font-family: inherit; /* Inherit font from parent */
+  margin: 0;
+}
+
+.ai-helper-container .btn-group .btn { /* If buttons are grouped */
+    margin-right: 8px;
+}
+.ai-helper-container .btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Ensure loading placeholder text is less prominent if needed */
+.loading-placeholder p {
+    color: #777;
+    font-style: italic;
+}
+[data-theme="dark"] .loading-placeholder p {
+    color: var(--text-muted);
+}
